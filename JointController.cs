@@ -1,26 +1,24 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using TiltFive;
+using UnityEngine.UI; // Include this to use the Text component
 
 namespace IKProject3
 {
     public class JointController : MonoBehaviour
     {
+        // robot
         private GameObject[] joint = new GameObject[3];
         private GameObject[] arm = new GameObject[3];
         private float[] armL = new float[3];
         private Vector3[] angle = new Vector3[3];
 
-        private GameObject TCP;
+        private GameObject TCP; // Tool center point
         private Vector3 screenPoint; 
         private Vector3 offset;
-        private Text TCPValueText;
-        private Renderer TCPRenderer;
-        private Text TCPLabel;
-
-        private bool isGrabbing;
+        private Text TCPValueText; // Reference to the Text component of the TCP value display
+        private Renderer TCPRenderer; // Renderer of the TCP
+        private Text TCPLabel; // Reference to the Text component of the TCP label display
 
         void Start()
         {
@@ -28,76 +26,46 @@ namespace IKProject3
             {
                 joint[i] = GameObject.Find("Joint_" + i.ToString());
                 arm[i] = GameObject.Find("Arm_" + i.ToString());
-
-                if (joint[i] == null || arm[i] == null)
-                {
-                    Debug.LogError("Joint or Arm GameObject not found");
-                    return;
-                }
-
                 if(i == 0) armL[i] = arm[i].transform.localScale.y;
                 else armL[i] = arm[i].transform.localScale.x;
             }
 
             TCP = GameObject.Find("TCP");
-            if (TCP == null)
-            {
-                Debug.LogError("TCP GameObject not found");
-                return;
-            }
+            TCPRenderer = TCP.GetComponent<Renderer>(); // Get the Renderer of the TCP
 
-            TCPRenderer = TCP.GetComponent<Renderer>();
-            if (TCPRenderer == null)
-            {
-                Debug.LogError("Renderer component not found in TCP GameObject");
-                return;
-            }
-
-            TCPValueText = GameObject.Find("TCP_Value")?.GetComponent<Text>();
-            TCPLabel = GameObject.Find("TCP_Display_Label")?.GetComponent<Text>();
-
-            if (TCPValueText == null || TCPLabel == null)
-            {
-                Debug.LogError("Text component not found in TCP_Value or TCP_Display_Label GameObject");
-                return;
-            }
+            TCPValueText = GameObject.Find("TCP_Value").GetComponent<Text>();
+            TCPLabel = GameObject.Find("TCP_Display_Label").GetComponent<Text>(); // Get the Text of the TCP label
         }
 
+        // Update is called once per frame
         void Update()
         {
-            if (TiltFive.Input.GetTrigger() > 0.5f)
+            if (Input.GetMouseButtonDown(0))
             {
-                if (!isGrabbing)
+                RaycastHit hit;
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out hit))
                 {
-                    RaycastHit hit;
-                    Ray ray = Camera.main.ScreenPointToRay(UnityEngine.Input.mousePosition);
-                    if (Physics.Raycast(ray, out hit))
+                    if (hit.transform.gameObject == TCP)
                     {
-                        if (hit.transform.gameObject == TCP)
-                        {
-                            screenPoint = Camera.main.WorldToScreenPoint(TCP.transform.position);
-                            offset = TCP.transform.position - Camera.main.ScreenToWorldPoint(new Vector3(UnityEngine.Input.mousePosition.x, UnityEngine.Input.mousePosition.y, screenPoint.z));
-                            isGrabbing = true;
-                        }
+                        screenPoint = Camera.main.WorldToScreenPoint(TCP.transform.position);
+                        offset = TCP.transform.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z));
                     }
                 }
-                else
-                {
-                    Vector3 curScreenPoint = new Vector3(UnityEngine.Input.mousePosition.x, UnityEngine.Input.mousePosition.y, screenPoint.z);
-                    Vector3 curPosition = Camera.main.ScreenToWorldPoint(curScreenPoint) + offset;
-                    TCP.transform.position = curPosition;
-                    TCPValueText.text = curPosition.x.ToString("F2") + ", " + curPosition.y.ToString("F2") + ", " + curPosition.z.ToString("F2");
-                    ComputeIK(TCP.transform.position);
-                }
             }
-            else
+
+            if (Input.GetMouseButton(0))
             {
-                isGrabbing = false;
+                Vector3 curScreenPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z);
+                Vector3 curPosition = Camera.main.ScreenToWorldPoint(curScreenPoint) + offset;
+                TCP.transform.position = curPosition;
+                TCPValueText.text = curPosition.x.ToString("F2") + ", " + curPosition.y.ToString("F2") + ", " + curPosition.z.ToString("F2"); // Update the TCP value display
+                ComputeIK(TCP.transform.position);
             }
         }
 
         void ComputeIK(Vector3 pos)
-       {
+        {
             float x = pos.x;
             float y = pos.y;
             float z = pos.z;
