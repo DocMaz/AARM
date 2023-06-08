@@ -1,0 +1,45 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class NewInputSystem : MonoBehaviour
+{
+
+    public GameObject cube;
+    public Material mat1;
+    public Material mat2;
+    public Material mat3;
+    public float speed;
+
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (TiltFive.Wand.TryGetWandDevice(TiltFive.PlayerIndex.One, TiltFive.ControllerIndex.Right, out TiltFive.WandDevice wandDevice))
+        {
+            if (wandDevice.One.wasPressedThisFrame)
+            {
+
+                cube.GetComponent<MeshRenderer>().material = mat1;
+
+            }
+
+            if (wandDevice.Two.wasPressedThisFrame)
+            {
+                cube.GetComponent<MeshRenderer>().material = mat2;
+            }
+
+
+
+            if (!wandDevice.One.isPressed && !wandDevice.Two.isPressed)
+            {
+                cube.GetComponent<MeshRenderer>().material = mat3;
+            }
+
+
+            cube.transform.Translate(wandDevice.Stick.ReadValue().x * Time.deltaTime * speed, 0.0f, wandDevice.Stick.ReadValue().y * Time.deltaTime * speed);
+
+        }
+    }
+}
